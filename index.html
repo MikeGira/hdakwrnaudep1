@@ -113,16 +113,9 @@
       timestamp: new Date().toISOString()
     }).then(() => {
       console.log("✓ Presence written.");
-      // Poll count every 10 seconds
-      function updateCount() {
-        fsCount("presence").then(n => {
-          window.__hdakActiveUsers = n;
-          const el = document.getElementById('info-active');
-          if (el) el.textContent = n + (n === 1 ? ' user online' : ' users online');
-        });
-      }
-      updateCount();
-      setInterval(updateCount, 10000);
+      // Show a static message — count is available on the analytics dashboard
+      const el = document.getElementById('info-active');
+      if (el) el.textContent = 'Session active';
     }).catch(e => console.error("✗ Presence write failed:", e));
 
     // Clean up presence on leave
