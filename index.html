@@ -2,8 +2,6 @@
 <html lang="en" data-theme="dark">
 <head>
 
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎧</text></svg>">
-
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-S0SRC56S6W"></script>
   <script>
@@ -69,13 +67,17 @@
       await fetch(url, { method: 'DELETE' });
     }
 
-    // GET count of documents in a collection
+    // COUNT via POST :runQuery — avoids GET 403 block
     async function fsCount(collection) {
-      const url = `${FS_BASE}/${collection}?key=${FS_API_KEY}&pageSize=300`;
-      const res = await fetch(url);
+      const url = `https://firestore.googleapis.com/v1/projects/${FS_PROJECT}/databases/default/documents:runQuery?key=${FS_API_KEY}`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ structuredQuery: { from: [{ collectionId: collection }], select: { fields: [] } } })
+      });
       if (!res.ok) return 0;
-      const data = await res.json();
-      return (data.documents || []).length;
+      const rows = await res.json();
+      return rows.filter(r => r.document).length;
     }
 
     // ── Browser detection ─────────────────────────────────────
@@ -115,9 +117,15 @@
       timestamp: new Date().toISOString()
     }).then(() => {
       console.log("✓ Presence written.");
-      // Show a static message — count is available on the analytics dashboard
-      const el = document.getElementById('info-active');
-      if (el) el.textContent = 'Session active';
+      // Poll active user count every 10s using POST (GET is blocked)
+      function updateCount() {
+        fsCount("presence").then(n => {
+          const el = document.getElementById('info-active');
+          if (el) el.textContent = n + (n === 1 ? " user online" : " users online");
+        }).catch(() => {});
+      }
+      updateCount();
+      setInterval(updateCount, 10000);
     }).catch(e => console.error("✗ Presence write failed:", e));
 
     // Clean up presence on leave
