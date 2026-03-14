@@ -23,7 +23,7 @@
   <script>
     const FS_PROJECT = "iais-b60ad";
     const FS_API_KEY = "AIzaSyApjekeHvZsgLTiyVmdKbRDuAQvYnRRIu8";
-    const FS_BASE    = `https://firestore.googleapis.com/v1/projects/${FS_PROJECT}/databases/__default__/documents`;
+    const FS_BASE    = `https://firestore.googleapis.com/v1/projects/${FS_PROJECT}/databases/default/documents`;
 
     // ── Helpers ───────────────────────────────────────────────
     // Convert a plain JS object → Firestore REST field map
@@ -986,8 +986,6 @@
   const audio = document.getElementById('episode-audio');
   const dots  = document.getElementById('buf-dots');
   const rLine = document.getElementById('ready-line');
-   
-  //Delete this comment. It is for testing purposes only.
 
   // Animate buffering dots
   let dc = 0;
