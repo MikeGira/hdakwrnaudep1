@@ -1,9 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎧</text></svg>">
-  
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>HDAK Analytics Dashboard</title>
@@ -36,12 +33,17 @@
     const FS_API_KEY = "AIzaSyApjekeHvZsgLTiyVmdKbRDuAQvYnRRIu8";
     const FS_BASE    = `https://firestore.googleapis.com/v1/projects/${FS_PROJECT}/databases/default/documents`;
 
-    // Read all docs from a collection (up to 300)
+    // Read all docs via POST :runQuery — avoids GET 403 block
     async function fsGetAll(col) {
-      const res = await fetch(`${FS_BASE}/${col}?key=${FS_API_KEY}&pageSize=300`);
-      if (!res.ok) throw new Error(`GET ${col} failed: ${res.status}`);
-      const data = await res.json();
-      return (data.documents || []).map(fsDocToRow);
+      const url = `https://firestore.googleapis.com/v1/projects/${FS_PROJECT}/databases/default/documents:runQuery?key=${FS_API_KEY}`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ structuredQuery: { from: [{ collectionId: col }] } })
+      });
+      if (!res.ok) throw new Error(`runQuery ${col} failed: ${res.status} ${await res.text()}`);
+      const rows = await res.json();
+      return rows.filter(r => r.document).map(r => fsDocToRow(r.document));
     }
 
     // Convert Firestore REST document → plain JS object
