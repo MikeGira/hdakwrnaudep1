@@ -27,26 +27,30 @@
       }
     }
   -->
-  <script type="module">
-    import { initializeApp }   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getFirestore, collection, onSnapshot, orderBy, query }
-                               from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  <script>
+    // ── Firestore REST API — no SDK needed ────────────────────
+    const FS_PROJECT = "iais-b60ad";
+    const FS_API_KEY = "AIzaSyApjekeHvZsgLTiyVmdKbRDuAQvYnRRIu8";
+    const FS_BASE    = `https://firestore.googleapis.com/v1/projects/${FS_PROJECT}/databases/(default)/documents`;
 
-    // ── Same config as index.html ─────────────────────────────
-    const firebaseConfig = {
-      apiKey: "AIzaSyApjekeHvZsgLTiyVmdKbRDuAQvYnRRIu8",
-      authDomain: "iais-b60ad.firebaseapp.com",
-      projectId: "iais-b60ad",
-      storageBucket: "iais-b60ad.firebasestorage.app",
-      messagingSenderId: "112436397872",
-      appId: "1:112436397872:web:f01cd80f3c2dee56942af5",
-      measurementId: "G-N2RS23H6FT"
-    };
+    // Read all docs from a collection (up to 300)
+    async function fsGetAll(col) {
+      const res = await fetch(`${FS_BASE}/${col}?key=${FS_API_KEY}&pageSize=300`);
+      if (!res.ok) throw new Error(`GET ${col} failed: ${res.status}`);
+      const data = await res.json();
+      return (data.documents || []).map(fsDocToRow);
+    }
 
-    const app = initializeApp(firebaseConfig);
-    const db  = getFirestore(app);
+    // Convert Firestore REST document → plain JS object
+    function fsDocToRow(doc) {
+      const row = { _id: doc.name?.split('/').pop() };
+      for (const [k, v] of Object.entries(doc.fields || {})) {
+        row[k] = v.stringValue ?? v.integerValue ?? v.booleanValue ?? null;
+      }
+      return row;
+    }
 
-    // ── Helpers ────────────────────────────────────────────────
+    // ── Helpers ───────────────────────────────────────────────
     function count(arr, key) {
       return arr.reduce((acc, r) => {
         const v = r[key] || 'Unknown';
@@ -56,20 +60,16 @@
     }
 
     function topN(obj, n = 8) {
-      return Object.entries(obj)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, n);
+      return Object.entries(obj).sort((a, b) => b[1] - a[1]).slice(0, n);
     }
 
-    const PALETTE = [
-      '#00c2ff','#ff6b35','#7c3aed','#10b981',
-      '#f59e0b','#ef4444','#06b6d4','#84cc16'
-    ];
+    const PALETTE = ['#00c2ff','#ff6b35','#7c3aed','#10b981','#f59e0b','#ef4444','#06b6d4','#84cc16'];
 
     let chartBrowser, chartPlatform, chartLang, chartTZ, chartTimeline;
     let allRows = [];
+    let activeUsers = 0;
 
-    // ── Chart builder ──────────────────────────────────────────
+    // ── Chart builders ────────────────────────────────────────
     function buildBar(id, label, data) {
       const ctx = document.getElementById(id);
       if (!ctx) return null;
@@ -78,23 +78,15 @@
         type: 'bar',
         data: {
           labels: entries.map(e => e[0]),
-          datasets: [{
-            label,
-            data: entries.map(e => e[1]),
-            backgroundColor: PALETTE,
-            borderRadius: 6,
-            borderSkipped: false
-          }]
+          datasets: [{ label, data: entries.map(e => e[1]),
+            backgroundColor: PALETTE, borderRadius: 6, borderSkipped: false }]
         },
         options: {
-          responsive: true,
-          maintainAspectRatio: false,
+          responsive: true, maintainAspectRatio: false,
           plugins: { legend: { display: false } },
           scales: {
-            x: { ticks: { color: '#8ba3be', font: { family: 'DM Sans', size: 11 } },
-                 grid:  { color: 'rgba(255,255,255,0.05)' } },
-            y: { ticks: { color: '#8ba3be', font: { family: 'DM Sans', size: 11 }, stepSize: 1 },
-                 grid:  { color: 'rgba(255,255,255,0.05)' } }
+            x: { ticks: { color: '#8ba3be', font: { family: 'DM Sans', size: 11 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
+            y: { ticks: { color: '#8ba3be', font: { family: 'DM Sans', size: 11 }, stepSize: 1 }, grid: { color: 'rgba(255,255,255,0.05)' } }
           }
         }
       });
@@ -108,23 +100,13 @@
         type: 'doughnut',
         data: {
           labels: entries.map(e => e[0]),
-          datasets: [{
-            label,
-            data: entries.map(e => e[1]),
-            backgroundColor: PALETTE,
-            borderWidth: 0,
-            hoverOffset: 8
-          }]
+          datasets: [{ label, data: entries.map(e => e[1]),
+            backgroundColor: PALETTE, borderWidth: 0, hoverOffset: 8 }]
         },
         options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              position: 'right',
-              labels: { color: '#8ba3be', font: { family: 'DM Sans', size: 11 }, padding: 14 }
-            }
-          }
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { position: 'right',
+            labels: { color: '#8ba3be', font: { family: 'DM Sans', size: 11 }, padding: 14 } } }
         }
       });
     }
@@ -132,139 +114,109 @@
     function buildTimeline(rows) {
       const ctx = document.getElementById('chart-timeline');
       if (!ctx) return null;
-
-      // Group by date string
       const byDate = {};
       rows.forEach(r => {
         if (!r.timestamp) return;
-        const d = r.timestamp.toDate ? r.timestamp.toDate() : new Date(r.timestamp);
+        const d = new Date(r.timestamp);
         const key = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         byDate[key] = (byDate[key] || 0) + 1;
       });
-
-      const sorted = Object.entries(byDate).slice(-14); // last 14 days
-
+      const sorted = Object.entries(byDate).slice(-14);
       return new Chart(ctx, {
         type: 'line',
         data: {
           labels: sorted.map(e => e[0]),
-          datasets: [{
-            label: 'Sessions',
-            data: sorted.map(e => e[1]),
-            borderColor: '#00c2ff',
-            backgroundColor: 'rgba(0,194,255,0.08)',
-            fill: true,
-            tension: 0.4,
-            pointBackgroundColor: '#00c2ff',
-            pointRadius: 4
-          }]
+          datasets: [{ label: 'Sessions', data: sorted.map(e => e[1]),
+            borderColor: '#00c2ff', backgroundColor: 'rgba(0,194,255,0.08)',
+            fill: true, tension: 0.4, pointBackgroundColor: '#00c2ff', pointRadius: 4 }]
         },
         options: {
-          responsive: true,
-          maintainAspectRatio: false,
+          responsive: true, maintainAspectRatio: false,
           plugins: { legend: { display: false } },
           scales: {
-            x: { ticks: { color: '#8ba3be', font: { family: 'DM Sans', size: 11 } },
-                 grid:  { color: 'rgba(255,255,255,0.05)' } },
-            y: { ticks: { color: '#8ba3be', font: { family: 'DM Sans', size: 11 }, stepSize: 1 },
-                 grid:  { color: 'rgba(255,255,255,0.05)' },
-                 beginAtZero: true }
+            x: { ticks: { color: '#8ba3be', font: { family: 'DM Sans', size: 11 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
+            y: { ticks: { color: '#8ba3be', font: { family: 'DM Sans', size: 11 }, stepSize: 1 }, grid: { color: 'rgba(255,255,255,0.05)' }, beginAtZero: true }
           }
         }
       });
     }
 
-    // ── Render all charts from rows ────────────────────────────
     function renderCharts(rows) {
       [chartBrowser, chartPlatform, chartLang, chartTZ, chartTimeline].forEach(c => c?.destroy());
-      chartBrowser   = buildDoughnut('chart-browser',   'Browser',   count(rows, 'browser'));
-      chartPlatform  = buildBar('chart-platform',  'Platform',  count(rows, 'platform'));
-      chartLang      = buildBar('chart-lang',      'Language',  count(rows, 'language'));
-      chartTZ        = buildBar('chart-tz',        'Timezone',  count(rows, 'timezone'));
-      chartTimeline  = buildTimeline(rows);
+      chartBrowser  = buildDoughnut('chart-browser',  'Browser',  count(rows, 'browser'));
+      chartPlatform = buildBar('chart-platform', 'Platform', count(rows, 'platform'));
+      chartLang     = buildBar('chart-lang',     'Language', count(rows, 'language'));
+      chartTZ       = buildBar('chart-tz',       'Timezone', count(rows, 'timezone'));
+      chartTimeline = buildTimeline(rows);
     }
 
-    // ── Stat cards ─────────────────────────────────────────────
-    function renderStats(rows, activeUsers) {
-      document.getElementById('stat-total').textContent   = rows.length;
-      document.getElementById('stat-active').textContent  = activeUsers;
+    function renderStats(rows, active) {
+      document.getElementById('stat-total').textContent    = rows.length;
+      document.getElementById('stat-active').textContent   = active;
       document.getElementById('stat-browsers').textContent = Object.keys(count(rows, 'browser')).length;
-      document.getElementById('stat-langs').textContent   = Object.keys(count(rows, 'language')).length;
+      document.getElementById('stat-langs').textContent    = Object.keys(count(rows, 'language')).length;
     }
 
-    // ── Table ─────────────────────────────────────────────────
     function renderTable(rows) {
       const tbody = document.getElementById('tbl-body');
       tbody.innerHTML = '';
-      const recent = [...rows].reverse().slice(0, 200);
-      recent.forEach(r => {
-        const d = r.timestamp?.toDate ? r.timestamp.toDate() : new Date();
+      [...rows].reverse().slice(0, 200).forEach(r => {
+        const d = r.timestamp ? new Date(r.timestamp) : new Date();
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>${d.toLocaleString()}</td>
-          <td>${r.browser  || '—'}</td>
-          <td>${r.platform || '—'}</td>
-          <td>${r.language || '—'}</td>
-          <td>${r.timezone || '—'}</td>
-          <td>${r.screenWidth || '—'} × ${r.screenHeight || '—'}</td>
-        `;
+          <td>${r.browser   || '—'}</td>
+          <td>${r.platform  || '—'}</td>
+          <td>${r.language  || '—'}</td>
+          <td>${r.timezone  || '—'}</td>
+          <td>${r.screenWidth || '—'} × ${r.screenHeight || '—'}</td>`;
         tbody.appendChild(tr);
       });
     }
 
-    // ── Live listeners ─────────────────────────────────────────
-    let activeUsers = 0;
-
-    // Presence — listen to whole collection, no where() = no index needed
-    onSnapshot(
-      collection(db, 'presence'),
-      snap => {
-        activeUsers = snap.size;
-        document.getElementById('stat-active').textContent = activeUsers;
-        const badge = document.getElementById('live-badge');
-        if (badge) badge.textContent = activeUsers + (activeUsers === 1 ? ' user online' : ' users online');
-      },
-      err => console.error("Presence listener error:", err)
-    );
-
-    // Device info — live, ordered by timestamp
-    // NOTE: Firestore will prompt you to create an index the first time.
-    // If you see an index error in the console, click the link in the error
-    // to auto-create it in one click, then reload this page.
-    onSnapshot(
-      query(collection(db, 'deviceInfo'), orderBy('timestamp', 'asc')),
-      snap => {
-        allRows = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    // ── Fetch & refresh (poll every 15s) ─────────────────────
+    async function refresh() {
+      try {
+        // Device info
+        allRows = await fsGetAll('deviceInfo');
+        allRows.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
         renderStats(allRows, activeUsers);
         renderCharts(allRows);
         renderTable(allRows);
         document.getElementById('last-updated').textContent =
           'Last updated: ' + new Date().toLocaleTimeString();
-      },
-      err => {
-        console.error("deviceInfo listener error:", err);
-        // Surface index-creation link if that's the issue
-        if (err.message && err.message.includes('index')) {
-          console.warn("👆 Click the link above in the error to create the required Firestore index, then reload.");
-        }
+
+        // Presence / active users
+        const presence = await fsGetAll('presence');
+        activeUsers = presence.length;
+        document.getElementById('stat-active').textContent = activeUsers;
+        const badge = document.getElementById('live-badge');
+        if (badge) badge.textContent = activeUsers + (activeUsers === 1 ? ' user online' : ' users online');
+
+      } catch(e) {
+        console.error("Dashboard refresh error:", e);
+        document.getElementById('last-updated').textContent = 'Error loading data — ' + e.message;
       }
-    );
+    }
+
+    // Initial load + poll every 15 seconds
+    document.addEventListener('DOMContentLoaded', () => {
+      refresh();
+      setInterval(refresh, 15000);
+    });
 
     // ── CSV export ────────────────────────────────────────────
     window.exportCSV = function() {
       const headers = ['Timestamp','Browser','Platform','Language','Timezone','Screen','UserAgent'];
-      const rows = allRows.map(r => {
-        const d = r.timestamp?.toDate ? r.timestamp.toDate() : new Date();
-        return [
-          d.toISOString(),
-          r.browser  || '',
-          r.platform || '',
-          r.language || '',
-          r.timezone || '',
-          `${r.screenWidth}x${r.screenHeight}`,
-          (r.userAgent || '').replace(/,/g, ';')
-        ].join(',');
-      });
+      const rows = allRows.map(r => [
+        r.timestamp || '',
+        r.browser   || '',
+        r.platform  || '',
+        r.language  || '',
+        r.timezone  || '',
+        `${r.screenWidth||''}x${r.screenHeight||''}`,
+        (r.userAgent || '').replace(/,/g, ';')
+      ].join(','));
       const csv  = [headers.join(','), ...rows].join('\n');
       const blob = new Blob([csv], { type: 'text/csv' });
       const url  = URL.createObjectURL(blob);
@@ -280,9 +232,8 @@
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
       const now = new Date().toLocaleString();
-      const W = doc.internal.pageSize.getWidth();
+      const W   = doc.internal.pageSize.getWidth();
 
-      // Header
       doc.setFillColor(13, 15, 18);
       doc.rect(0, 0, W, 30, 'F');
       doc.setTextColor(0, 194, 255);
@@ -291,86 +242,63 @@
       doc.text('HDAK Project — Analytics Report', 14, 14);
       doc.setFontSize(9);
       doc.setTextColor(138, 163, 190);
-      doc.text(`Generated: ${now}   |   Total sessions: ${allRows.length}   |   Active users: ${activeUsers}`, 14, 22);
+      doc.text(`Generated: ${now}   |   Sessions: ${allRows.length}   |   Active: ${activeUsers}`, 14, 22);
 
       let y = 38;
-
-      // Summary table
-      doc.setFontSize(12);
-      doc.setTextColor(228, 234, 243);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Session Summary', 14, y);
-      y += 6;
-
       const headers = ['Timestamp', 'Browser', 'Platform', 'Language', 'Timezone', 'Screen'];
       const colW    = [42, 28, 26, 22, 44, 28];
-      let x = 14;
+
+      doc.setFontSize(12); doc.setFont('helvetica','bold');
+      doc.setTextColor(228, 234, 243);
+      doc.text('Session Summary', 14, y); y += 6;
 
       doc.setFillColor(26, 30, 38);
       doc.rect(14, y, W - 28, 7, 'F');
-      doc.setFontSize(8);
-      doc.setTextColor(0, 194, 255);
+      doc.setFontSize(8); doc.setTextColor(0, 194, 255);
+      let x = 14;
       headers.forEach((h, i) => { doc.text(h, x + 2, y + 5); x += colW[i]; });
       y += 9;
 
       doc.setTextColor(200, 210, 220);
-      const recent = [...allRows].reverse().slice(0, 50);
-      recent.forEach((r, idx) => {
+      [...allRows].reverse().slice(0, 50).forEach((r, idx) => {
         if (y > 272) { doc.addPage(); y = 20; }
-        const d  = r.timestamp?.toDate ? r.timestamp.toDate() : new Date();
         const row = [
-          d.toLocaleDateString(),
-          r.browser  || '—',
-          r.platform || '—',
-          r.language || '—',
+          r.timestamp ? new Date(r.timestamp).toLocaleDateString() : '—',
+          r.browser  || '—', r.platform || '—', r.language || '—',
           (r.timezone || '—').slice(0, 22),
-          `${r.screenWidth || '?'}×${r.screenHeight || '?'}`
+          `${r.screenWidth||'?'}×${r.screenHeight||'?'}`
         ];
-        if (idx % 2 === 0) {
-          doc.setFillColor(22, 26, 34);
-          doc.rect(14, y - 3, W - 28, 7, 'F');
-        }
+        if (idx % 2 === 0) { doc.setFillColor(22,26,34); doc.rect(14, y-3, W-28, 7, 'F'); }
         x = 14;
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(7.5);
+        doc.setFont('helvetica','normal'); doc.setFontSize(7.5);
         row.forEach((cell, i) => { doc.text(String(cell), x + 2, y + 2); x += colW[i]; });
         y += 7;
       });
 
-      // Breakdown summaries
-      function addBreakdown(title, fieldKey) {
+      function addBreakdown(title, field) {
         if (y > 240) { doc.addPage(); y = 20; }
         y += 8;
-        doc.setFontSize(11);
-        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11); doc.setFont('helvetica','bold');
         doc.setTextColor(0, 194, 255);
-        doc.text(title, 14, y);
-        y += 4;
-        const data = topN(count(allRows, fieldKey), 10);
-        data.forEach(([k, v]) => {
+        doc.text(title, 14, y); y += 4;
+        topN(count(allRows, field), 10).forEach(([k, v]) => {
           if (y > 272) { doc.addPage(); y = 20; }
-          doc.setFontSize(8.5);
-          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(8.5); doc.setFont('helvetica','normal');
           doc.setTextColor(200, 210, 220);
-          doc.text(`${k}:  ${v} session${v !== 1 ? 's' : ''}`, 20, y);
-          y += 6;
+          doc.text(`${k}:  ${v} session${v !== 1 ? 's' : ''}`, 20, y); y += 6;
         });
       }
 
-      addBreakdown('Browser Breakdown',   'browser');
-      addBreakdown('Platform Breakdown',  'platform');
-      addBreakdown('Language Breakdown',  'language');
-      addBreakdown('Timezone Breakdown',  'timezone');
+      addBreakdown('Browser Breakdown',  'browser');
+      addBreakdown('Platform Breakdown', 'platform');
+      addBreakdown('Language Breakdown', 'language');
+      addBreakdown('Timezone Breakdown', 'timezone');
 
-      // Footer
       const pages = doc.internal.getNumberOfPages();
       for (let p = 1; p <= pages; p++) {
-        doc.setPage(p);
-        doc.setFontSize(8);
-        doc.setTextColor(80, 100, 120);
+        doc.setPage(p); doc.setFontSize(8); doc.setTextColor(80,100,120);
         doc.text(`HDAK Project Analytics  |  Page ${p} of ${pages}`, 14, 290);
       }
-
       doc.save(`hdak-analytics-${new Date().toISOString().slice(0,10)}.pdf`);
     };
   </script>
