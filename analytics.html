@@ -31,7 +31,7 @@
     // ── Firestore REST API — no SDK needed ────────────────────
     const FS_PROJECT = "iais-b60ad";
     const FS_API_KEY = "AIzaSyApjekeHvZsgLTiyVmdKbRDuAQvYnRRIu8";
-    const FS_BASE    = `https://firestore.googleapis.com/v1/projects/${FS_PROJECT}/databases/__default__/documents`;
+    const FS_BASE    = `https://firestore.googleapis.com/v1/projects/${FS_PROJECT}/databases/default/documents`;
 
     // Read all docs from a collection (up to 300)
     async function fsGetAll(col) {
@@ -173,8 +173,6 @@
         tbody.appendChild(tr);
       });
     }
-
-    //Delete this comment. It is for testing purposes only.
 
     // ── Fetch & refresh (poll every 15s) ─────────────────────
     async function refresh() {
