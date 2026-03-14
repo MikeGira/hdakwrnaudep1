@@ -19,12 +19,16 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 
-  <!-- Firebase -->
+  <!-- Firebase — ALL imports must be at the top of the module, never nested -->
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getAnalytics, logEvent } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
-    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { initializeApp }   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAnalytics, logEvent }
+                               from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
+    import { getFirestore, collection, addDoc, doc, setDoc, deleteDoc,
+             onSnapshot, serverTimestamp }
+                               from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
+    // ── Your Firebase project config ──────────────────────────
     const firebaseConfig = {
       apiKey: "AIzaSyApjekeHvZsgLTiyVmdKbRDuAQvYnRRIu8",
       authDomain: "iais-b60ad.firebaseapp.com",
@@ -35,11 +39,11 @@
       measurementId: "G-528408166"
     };
 
-    const app = initializeApp(firebaseConfig);
+    const app       = initializeApp(firebaseConfig);
     const analytics = getAnalytics(app);
-    const db = getFirestore(app);
+    const db        = getFirestore(app);
 
-    // ── Browser detection helper ──────────────────────────────
+    // ── Browser detection ─────────────────────────────────────
     function detectBrowser(ua) {
       if (/Edg\//i.test(ua))          return 'Microsoft Edge';
       if (/OPR\/|Opera\//i.test(ua))  return 'Opera';
@@ -52,57 +56,61 @@
       return 'Unknown';
     }
     const browser = detectBrowser(navigator.userAgent);
+    window.__hdakBrowser = browser;  // expose for info-row chip
 
-    // Expose browser for the info-row chip
-    window.__hdakBrowser = browser;
-
-    const deviceData = {
-      episode: "Episode1",
-      userAgent: navigator.userAgent,
-      browser: browser,
-      platform: navigator.platform,
-      language: navigator.language,
-      screenWidth: screen.width,
-      screenHeight: screen.height,
-      colorDepth: screen.colorDepth,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      timestamp: serverTimestamp()
-    };
-
-    logEvent(analytics, "episode_loaded", {
-      episode: "Episode1",
-      platform: navigator.platform,
-      language: navigator.language,
-      browser: browser
-    });
-
+    // ── Write device info to Firestore ────────────────────────
     try {
-      await addDoc(collection(db, "deviceInfo"), deviceData);
-      console.log("Device info logged to Firebase.");
+      await addDoc(collection(db, "deviceInfo"), {
+        episode:     "Episode1",
+        userAgent:   navigator.userAgent,
+        browser:     browser,
+        platform:    navigator.platform,
+        language:    navigator.language,
+        screenWidth:  screen.width,
+        screenHeight: screen.height,
+        colorDepth:   screen.colorDepth,
+        timezone:    Intl.DateTimeFormat().resolvedOptions().timeZone,
+        timestamp:   serverTimestamp()
+      });
+      console.log("✓ Device info written to Firestore.");
     } catch (e) {
-      console.warn("Firebase logging failed:", e);
+      console.error("✗ Firestore write failed:", e);
     }
 
-    // ── Active-users tracking via Firestore presence ──────────
-    // Each visitor writes a "presence" doc that expires when they leave.
-    import { doc, setDoc, deleteDoc, onSnapshot, collection as col,
-             query, where, getCountFromServer }
-      from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    // ── Log Analytics event ───────────────────────────────────
+    try {
+      logEvent(analytics, "episode_loaded", {
+        episode:  "Episode1",
+        platform: navigator.platform,
+        language: navigator.language,
+        browser:  browser
+      });
+    } catch (e) { /* analytics non-critical */ }
 
+    // ── Presence tracking (active users) ─────────────────────
+    // Uses a simple collection where each tab writes one doc.
+    // No composite index needed — we just count ALL docs in the collection
+    // and delete our own on page unload.
     const sessionId = crypto.randomUUID();
     const presRef   = doc(db, "presence", sessionId);
 
-    await setDoc(presRef, { active: true, ts: serverTimestamp() });
+    try {
+      await setDoc(presRef, { ts: serverTimestamp() });
+      console.log("✓ Presence written.");
+    } catch (e) {
+      console.error("✗ Presence write failed:", e);
+    }
 
-    // Count active docs in real-time and expose for the chip
-    const presQuery = query(col(db, "presence"), where("active", "==", true));
-    onSnapshot(presQuery, snap => {
-      window.__hdakActiveUsers = snap.size;
+    // Listen to the whole presence collection — no where() = no index needed
+    onSnapshot(collection(db, "presence"), snap => {
+      const count = snap.size;
+      window.__hdakActiveUsers = count;
       const el = document.getElementById('info-active');
-      if (el) el.textContent = snap.size + ' online now';
-    });
+      if (el) el.textContent = count + (count === 1 ? ' user online' : ' users online');
+    }, err => console.error("Presence listener error:", err));
 
-    // Clean up on page leave
+    // Remove presence doc when user leaves
+    window.addEventListener('pagehide',     () => deleteDoc(presRef));
     window.addEventListener('beforeunload', () => deleteDoc(presRef));
   </script>
 
