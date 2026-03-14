@@ -754,7 +754,7 @@
         <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21"/></svg>
         Launch Episode 1
       </a>
-      <a class="btn-outline" href="hdakwrn.mp3" download>
+      <a class="btn-outline" href="hdakwrn.mp3" download onclick="trackDownload()">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Download MP3
       </a>
@@ -827,11 +827,11 @@
             Your browser does not support HTML5 audio.
           </audio>
           <div class="dl-row">
-            <a class="dl-btn" href="hdakwrn.mp3" download>
+            <a class="dl-btn" href="hdakwrn.mp3" download onclick="trackDownload()">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               Download MP3
             </a>
-            <a class="dl-btn" href="hdakwrn.ac3" download>
+            <a class="dl-btn" href="hdakwrn.ac3" download onclick="trackDownload()">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               Download AC3
             </a>
@@ -1016,6 +1016,16 @@
       }, 550);
     }
   }, 1000);
+
+  /* ── Download tracking ───────────────────────────────── */
+  function trackDownload() {
+    try {
+      const dl   = JSON.parse(localStorage.getItem('hdak_downloads') || '{}');
+      const key  = new Date().toISOString().slice(0,10);
+      dl[key]    = (dl[key] || 0) + 1;
+      localStorage.setItem('hdak_downloads', JSON.stringify(dl));
+    } catch(e) {}
+  }
 </script>
 
 </body>
