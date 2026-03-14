@@ -1,56 +1,44 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
-    <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-S0SRC56S6W"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
 
-  gtag('config', 'G-S0SRC56S6W');
-</script>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-S0SRC56S6W"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-S0SRC56S6W');
+  </script>
 
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>HDAK Project — Interactive Audio Instruction</title>
 
-  <!-- Google Fonts: Syne (display) + DM Sans (body) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 
-  <!-- ============================================================
-       REPLACE THE FIREBASE CONFIG BELOW WITH YOUR OWN
-       Steps:
-       1. Go to https://console.firebase.google.com
-       2. Create a new project (free Spark plan)
-       3. Register a Web App inside the project
-       4. Copy the firebaseConfig object here
-       5. Enable "Analytics" and "Firestore Database" in your project
-  ============================================================ -->
+  <!-- Firebase -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getAnalytics, logEvent } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
     import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-    // ↓↓↓ PASTE YOUR FIREBASE CONFIG HERE ↓↓↓
     const firebaseConfig = {
       apiKey: "AIzaSyApjekeHvZsgLTiyVmdKbRDuAQvYnRRIu8",
       authDomain: "iais-b60ad.firebaseapp.com",
       projectId: "iais-b60ad",
-      storageBucket: "iais-b60ad.firebasestorage.app", // Note: This is different from the original placeholder (iais-b60ad.appspot.com)
+      storageBucket: "iais-b60ad.firebasestorage.app",
       messagingSenderId: "112436397872",
       appId: "1:112436397872:web:f01cd80f3c2dee56942af5",
-      measurementId: "G-528408166" // This value remains the same as your provided Google Analytics Property ID
+      measurementId: "G-528408166"
     };
-    // ↑↑↑ PASTE YOUR FIREBASE CONFIG HERE ↑↑↑
 
     const app = initializeApp(firebaseConfig);
     const analytics = getAnalytics(app);
     const db = getFirestore(app);
 
-    // Collect device info (replaces old Heroku /deviceInfo endpoint)
     const deviceData = {
       episode: "Episode1",
       userAgent: navigator.userAgent,
@@ -63,14 +51,12 @@
       timestamp: serverTimestamp()
     };
 
-    // Log to Firebase Analytics
     logEvent(analytics, "episode_loaded", {
       episode: "Episode1",
       platform: navigator.platform,
       language: navigator.language
     });
 
-    // Save full device record to Firestore (replaces Heroku API)
     try {
       await addDoc(collection(db, "deviceInfo"), deviceData);
       console.log("Device info logged to Firebase.");
@@ -80,555 +66,845 @@
   </script>
 
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --bg:         #0b0f14;
-      --surface:    #111820;
-      --border:     #1e2d3d;
-      --accent:     #00c2ff;
-      --accent2:    #ff6b35;
-      --text:       #e8f0f7;
-      --muted:      #6a8399;
-      --white:      #ffffff;
+    /* ─────────────────────────────────────────
+       DESIGN TOKENS — dark (default) and light
+    ───────────────────────────────────────── */
+    :root,
+    [data-theme="dark"] {
+      --bg:           #0d0f12;
+      --bg2:          #13161b;
+      --surface:      #1a1e26;
+      --surface2:     #20252f;
+      --border:       rgba(255,255,255,0.08);
+      --border-med:   rgba(255,255,255,0.14);
+      --text:         #e4eaf3;
+      --text-sub:     #7a8fa8;
+      --text-muted:   #4a5a6e;
+      --accent:       #00c2ff;
+      --accent-glow:  rgba(0,194,255,0.13);
+      --accent2:      #ff6b35;
+      --white:        #ffffff;
+      --nav-bg:       rgba(13,15,18,0.90);
+      --card-top:     linear-gradient(90deg,#00c2ff,#ff6b35);
+      --terminal-bg:  #0b0e13;
+      --sparkle:      rgba(0,194,255,0.6);
+      --toggle-knob:  #ffffff;
+      --sun:          #fbbf24;
+      --moon:         #a5b4fc;
     }
 
-    html, body {
-      height: 100%;
+    [data-theme="light"] {
+      --bg:           #f3f5f8;
+      --bg2:          #ffffff;
+      --surface:      #ffffff;
+      --surface2:     #edf0f4;
+      --border:       rgba(0,0,0,0.07);
+      --border-med:   rgba(0,0,0,0.13);
+      --text:         #111827;
+      --text-sub:     #4b5a6e;
+      --text-muted:   #9aa5b4;
+      --accent:       #0077cc;
+      --accent-glow:  rgba(0,119,204,0.09);
+      --accent2:      #e05a20;
+      --white:        #111827;
+      --nav-bg:       rgba(243,245,248,0.94);
+      --card-top:     linear-gradient(90deg,#0077cc,#e05a20);
+      --terminal-bg:  #1a1e26;
+      --sparkle:      rgba(0,119,204,0.45);
+      --toggle-knob:  #0077cc;
+      --sun:          #d97706;
+      --moon:         #6366f1;
+    }
+
+    /* ─────────────────────────────────────────
+       RESET & BASE
+    ───────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
       background: var(--bg);
       color: var(--text);
       font-family: 'DM Sans', sans-serif;
       font-weight: 400;
+      line-height: 1.65;
       overflow-x: hidden;
+      transition: background 0.35s, color 0.35s;
     }
 
-    /* ── Background grid ── */
+    /* Decorative dot grid */
     body::before {
       content: '';
-      position: fixed; inset: 0;
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
       background-image:
         linear-gradient(var(--border) 1px, transparent 1px),
         linear-gradient(90deg, var(--border) 1px, transparent 1px);
-      background-size: 48px 48px;
-      opacity: 0.45;
-      pointer-events: none;
-      z-index: 0;
+      background-size: 56px 56px;
+      transition: opacity 0.35s;
     }
 
-    /* ── Glow orbs ── */
+    /* Glow orb (accent colour) */
     body::after {
       content: '';
-      position: fixed;
-      width: 600px; height: 600px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(0,194,255,0.12) 0%, transparent 70%);
-      top: -200px; left: -200px;
-      pointer-events: none;
-      z-index: 0;
-      animation: orbFloat 10s ease-in-out infinite alternate;
+      position: fixed; z-index: 0; pointer-events: none;
+      width: 700px; height: 700px; border-radius: 50%;
+      background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+      top: -250px; left: -250px;
+      animation: orbDrift 14s ease-in-out infinite alternate;
+      transition: background 0.35s;
     }
 
-    @keyframes orbFloat {
-      from { transform: translate(0, 0); }
-      to   { transform: translate(80px, 60px); }
+    @keyframes orbDrift {
+      from { transform: translate(0,0); }
+      to   { transform: translate(100px,70px); }
     }
 
-    /* ── Page wrapper ── */
     .page {
       position: relative; z-index: 1;
-      min-height: 100vh;
       display: flex; flex-direction: column;
+      min-height: 100vh;
     }
 
-    /* ── Header ── */
-    header {
+    /* ─────────────────────────────────────────
+       NAV
+    ───────────────────────────────────────── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
       display: flex; align-items: center; justify-content: space-between;
-      padding: 20px 40px;
+      padding: 0 48px;
+      height: 64px;
+      background: var(--nav-bg);
+      backdrop-filter: blur(18px);
       border-bottom: 1px solid var(--border);
-      background: rgba(11,15,20,0.85);
-      backdrop-filter: blur(12px);
-      position: sticky; top: 0; z-index: 10;
-      animation: slideDown 0.6s ease both;
+      animation: slideDown 0.5s ease both;
+      transition: background 0.35s, border-color 0.35s;
     }
 
     @keyframes slideDown {
-      from { opacity: 0; transform: translateY(-20px); }
+      from { opacity: 0; transform: translateY(-16px); }
       to   { opacity: 1; transform: translateY(0); }
     }
 
-    .logo-group {
-      display: flex; align-items: center; gap: 20px;
+    .nav-brand {
+      display: flex; align-items: center; gap: 16px;
     }
 
-    .logo-group img {
-      height: 44px;
-      width: auto;
-      object-fit: contain;
-      filter: brightness(0.9) contrast(1.1);
-      transition: filter 0.3s;
+    .nav-logos {
+      display: flex; align-items: center; gap: 14px;
     }
 
-    .logo-group img:hover { filter: brightness(1.1); }
-
-    .logo-divider {
-      width: 1px; height: 36px;
-      background: var(--border);
+    .nav-logos img {
+      height: 36px; width: auto; object-fit: contain;
+      transition: opacity 0.2s;
     }
 
-    .header-badge {
+    .nav-sep {
+      width: 1px; height: 28px;
+      background: var(--border-med);
+    }
+
+    .nav-pill {
       font-family: 'Syne', sans-serif;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
+      font-size: 10px; font-weight: 700;
+      letter-spacing: 0.22em; text-transform: uppercase;
       color: var(--accent);
-      border: 1px solid rgba(0,194,255,0.3);
-      padding: 6px 14px;
+      border: 1px solid rgba(0,194,255,0.22);
+      padding: 5px 13px;
       border-radius: 100px;
-      background: rgba(0,194,255,0.06);
+      background: var(--accent-glow);
+      white-space: nowrap;
+      transition: color 0.35s, background 0.35s;
     }
 
-    /* ── Hero ── */
+    .nav-right {
+      display: flex; align-items: center; gap: 18px;
+    }
+
+    /* Live time chip */
+    .nav-live {
+      display: flex; align-items: center; gap: 7px;
+      font-size: 12px; font-family: 'DM Mono', monospace;
+      color: var(--text-sub);
+    }
+
+    .live-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: #22c55e;
+      flex-shrink: 0;
+      animation: livePulse 2s ease-in-out infinite;
+    }
+
+    @keyframes livePulse {
+      0%,100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.5); }
+      50%      { box-shadow: 0 0 0 6px rgba(34,197,94,0); }
+    }
+
+    /* ── Dark/light toggle ── */
+    .theme-toggle {
+      display: flex; align-items: center; gap: 8px;
+      cursor: pointer; user-select: none;
+    }
+
+    .theme-toggle input { display: none; }
+
+    .t-icon {
+      font-size: 13px; line-height: 1;
+      color: var(--text-muted);
+      transition: color 0.35s;
+    }
+
+    .t-icon.sun  { color: var(--sun); }
+    .t-icon.moon { color: var(--moon); }
+
+    .toggle-track {
+      width: 44px; height: 24px;
+      border-radius: 100px;
+      background: var(--surface2);
+      border: 1px solid var(--border-med);
+      position: relative;
+      transition: background 0.3s, border-color 0.3s;
+      flex-shrink: 0;
+    }
+
+    .toggle-track::after {
+      content: '';
+      position: absolute; top: 3px; left: 3px;
+      width: 16px; height: 16px; border-radius: 50%;
+      background: var(--toggle-knob);
+      transition: transform 0.25s ease, background 0.3s;
+    }
+
+    [data-theme="light"] .toggle-track { background: var(--accent-glow); border-color: var(--accent); }
+    [data-theme="light"] .toggle-track::after { transform: translateX(20px); }
+
+    /* ─────────────────────────────────────────
+       HERO
+    ───────────────────────────────────────── */
     .hero {
-      flex: 1;
       display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      text-align: center;
-      padding: 80px 24px 40px;
-      gap: 24px;
+      align-items: center; text-align: center;
+      padding: 100px 24px 72px;
+      gap: 28px;
     }
 
-    .hero-eyebrow {
-      display: flex; align-items: center; gap: 10px;
-      font-size: 12px; font-weight: 500;
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 10px;
+      font-size: 11px; font-weight: 500;
       letter-spacing: 0.18em; text-transform: uppercase;
-      color: var(--muted);
-      animation: fadeUp 0.7s 0.2s ease both;
+      color: var(--text-sub);
+      animation: fadeUp 0.6s 0.1s ease both;
     }
 
-    .dot {
-      width: 6px; height: 6px;
-      background: var(--accent);
-      border-radius: 50%;
-      animation: pulse 2s infinite;
-    }
+    .sp { color: var(--sparkle); }
 
-    @keyframes pulse {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(0,194,255,0.5); }
-      50%       { box-shadow: 0 0 0 8px rgba(0,194,255,0); }
-    }
-
-    h1.hero-title {
+    h1 {
       font-family: 'Syne', sans-serif;
-      font-size: clamp(2.8rem, 8vw, 6rem);
+      font-size: clamp(3rem, 9vw, 6.5rem);
       font-weight: 800;
       line-height: 1.0;
-      letter-spacing: -0.02em;
+      letter-spacing: -0.03em;
       color: var(--white);
-      animation: fadeUp 0.7s 0.35s ease both;
+      animation: fadeUp 0.6s 0.22s ease both;
     }
 
-    h1.hero-title span {
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
+    h1 .grad {
+      background: var(--card-top);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
     }
 
     .hero-sub {
-      font-size: clamp(1rem, 2.5vw, 1.2rem);
-      color: var(--muted);
-      max-width: 480px;
-      line-height: 1.65;
+      max-width: 520px;
+      font-size: clamp(1rem, 2.2vw, 1.15rem);
       font-weight: 300;
-      animation: fadeUp 0.7s 0.5s ease both;
+      color: var(--text-sub);
+      line-height: 1.75;
+      animation: fadeUp 0.6s 0.38s ease both;
     }
 
-    /* ── Loader card ── */
-    .loader-card {
+    /* CTA buttons */
+    .hero-cta {
+      display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;
+      animation: fadeUp 0.6s 0.52s ease both;
+    }
+
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 13px 30px;
+      background: var(--accent);
+      color: #000;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px; font-weight: 500;
+      border: none; border-radius: 100px;
+      cursor: pointer; text-decoration: none;
+      transition: opacity 0.2s, transform 0.15s;
+    }
+
+    .btn-primary:hover { opacity: 0.85; transform: translateY(-2px); }
+
+    .btn-outline {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 12px 28px;
+      background: transparent;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px; font-weight: 400;
+      border: 1px solid var(--border-med);
+      border-radius: 100px;
+      cursor: pointer; text-decoration: none;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .btn-outline:hover { border-color: var(--accent); background: var(--accent-glow); }
+
+    /* Sparkle divider */
+    .sparkle-div {
+      width: 100%; max-width: 900px;
+      display: flex; align-items: center; gap: 20px;
+      animation: fadeUp 0.6s 0.65s ease both;
+    }
+
+    .sparkle-div hr { flex: 1; border: none; border-top: 1px solid var(--border); }
+    .sparkle-div .sparks { display: flex; gap: 12px; }
+    .sparkle-div .sparks span { color: var(--sparkle); font-size: 14px; }
+
+    /* ─────────────────────────────────────────
+       PLAYER CARD
+    ───────────────────────────────────────── */
+    .player-wrap {
+      display: flex; justify-content: center;
+      padding: 0 24px 80px;
+    }
+
+    .player-card {
       position: relative;
-      width: min(420px, 90vw);
+      width: min(540px, 100%);
       background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 32px;
-      display: flex; flex-direction: column; align-items: center; gap: 20px;
-      animation: fadeUp 0.7s 0.65s ease both;
+      border: 1px solid var(--border-med);
+      border-radius: 22px;
       overflow: hidden;
+      animation: fadeUp 0.6s 0.78s ease both;
+      transition: background 0.35s, border-color 0.35s;
     }
 
-    .loader-card::before {
-      content: '';
-      position: absolute; top: 0; left: 0; right: 0;
-      height: 2px;
-      background: linear-gradient(90deg, var(--accent), var(--accent2));
-      border-radius: 2px;
+    .card-bar {
+      height: 3px;
+      background: var(--card-top);
     }
 
-    /* Audio bars animation */
-    .audio-bars {
+    .card-body {
+      padding: 32px 32px 28px;
+      display: flex; flex-direction: column;
+      align-items: center; gap: 24px;
+    }
+
+    /* Terminal */
+    .terminal {
+      width: 100%;
+      background: var(--terminal-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      transition: background 0.35s;
+    }
+
+    .term-titlebar {
+      display: flex; align-items: center; gap: 7px;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(0,0,0,0.25);
+    }
+
+    .tdot { width: 10px; height: 10px; border-radius: 50%; }
+    .tdot:nth-child(1) { background: #ff5f57; }
+    .tdot:nth-child(2) { background: #febc2e; }
+    .tdot:nth-child(3) { background: #28c840; }
+
+    .term-name {
+      flex: 1; text-align: center;
+      font-family: 'DM Mono', monospace;
+      font-size: 11px; color: var(--text-muted);
+    }
+
+    .term-out {
+      padding: 16px 18px;
+      font-family: 'DM Mono', monospace;
+      font-size: 12.5px; line-height: 1.8;
+      color: #7dd3fc;
+    }
+
+    .term-out .d  { color: var(--text-muted); }
+    .term-out .g  { color: #4ade80; }
+    .term-out .y  { color: #fbbf24; }
+    .term-out .b  { color: var(--accent); }
+
+    /* Equaliser bars */
+    .eq-bars {
       display: flex; align-items: flex-end; gap: 5px;
-      height: 48px;
+      height: 40px;
     }
 
-    .audio-bars span {
-      display: block;
-      width: 6px;
-      border-radius: 4px;
-      background: linear-gradient(180deg, var(--accent), rgba(0,194,255,0.3));
-      animation: barBounce 1.1s ease-in-out infinite;
+    .eq-bars span {
+      display: block; width: 5px; border-radius: 3px;
+      background: linear-gradient(180deg, var(--accent), rgba(0,194,255,0.15));
+      animation: eqBounce 1.1s ease-in-out infinite;
     }
 
-    .audio-bars span:nth-child(1) { height: 20px; animation-delay: 0.0s; }
-    .audio-bars span:nth-child(2) { height: 36px; animation-delay: 0.15s; }
-    .audio-bars span:nth-child(3) { height: 28px; animation-delay: 0.3s; }
-    .audio-bars span:nth-child(4) { height: 44px; animation-delay: 0.1s; }
-    .audio-bars span:nth-child(5) { height: 18px; animation-delay: 0.25s; }
-    .audio-bars span:nth-child(6) { height: 34px; animation-delay: 0.05s; }
-    .audio-bars span:nth-child(7) { height: 26px; animation-delay: 0.2s; }
+    .eq-bars span:nth-child(1) { height: 18px; animation-delay: 0.00s; }
+    .eq-bars span:nth-child(2) { height: 34px; animation-delay: 0.15s; }
+    .eq-bars span:nth-child(3) { height: 22px; animation-delay: 0.30s; }
+    .eq-bars span:nth-child(4) { height: 38px; animation-delay: 0.10s; }
+    .eq-bars span:nth-child(5) { height: 16px; animation-delay: 0.25s; }
+    .eq-bars span:nth-child(6) { height: 30px; animation-delay: 0.05s; }
+    .eq-bars span:nth-child(7) { height: 24px; animation-delay: 0.20s; }
 
-    @keyframes barBounce {
-      0%, 100% { transform: scaleY(0.4); opacity: 0.5; }
-      50%       { transform: scaleY(1);   opacity: 1; }
+    @keyframes eqBounce {
+      0%,100% { transform: scaleY(0.35); opacity: 0.4; }
+      50%      { transform: scaleY(1);   opacity: 1; }
     }
 
-    .loader-label {
-      font-size: 13px; font-weight: 500;
-      color: var(--muted);
-      letter-spacing: 0.06em;
+    /* Countdown ring */
+    #countdown-block {
+      display: flex; flex-direction: column;
+      align-items: center; gap: 14px;
     }
 
-    /* ── Countdown ring ── */
-    .countdown-wrap {
-      display: flex; flex-direction: column; align-items: center; gap: 8px;
+    .ring-wrap {
+      position: relative; width: 80px; height: 80px;
     }
 
-    .ring-container {
-      position: relative;
-      width: 72px; height: 72px;
-    }
-
-    .ring-container svg {
-      transform: rotate(-90deg);
+    .ring-wrap svg {
       position: absolute; inset: 0;
+      transform: rotate(-90deg);
     }
 
-    .ring-track { fill: none; stroke: var(--border); stroke-width: 4; }
-    .ring-fill  {
-      fill: none;
-      stroke: url(#ringGrad);
-      stroke-width: 4;
+    .rtrack { fill: none; stroke: var(--surface2); stroke-width: 4.5; }
+    .rfill  {
+      fill: none; stroke: url(#rg); stroke-width: 4.5;
       stroke-linecap: round;
-      stroke-dasharray: 188.5;
-      stroke-dashoffset: 188.5;
-      animation: ringAnim 5s linear forwards;
+      stroke-dasharray: 214;
+      stroke-dashoffset: 214;
+      animation: rfillAnim 5s linear forwards;
     }
 
-    @keyframes ringAnim {
-      from { stroke-dashoffset: 188.5; }
+    @keyframes rfillAnim {
+      from { stroke-dashoffset: 214; }
       to   { stroke-dashoffset: 0; }
     }
 
-    #countdown {
+    #cnt-num {
       position: absolute; inset: 0;
       display: flex; align-items: center; justify-content: center;
       font-family: 'Syne', sans-serif;
-      font-size: 22px; font-weight: 700;
+      font-size: 26px; font-weight: 800;
       color: var(--white);
     }
 
-    .countdown-label {
+    .ring-sub {
       font-size: 11px; letter-spacing: 0.15em;
-      text-transform: uppercase;
-      color: var(--muted);
+      text-transform: uppercase; color: var(--text-muted);
     }
 
-    /* ── Audio player panel (shown after countdown) ── */
+    /* Audio player panel */
     .audio-panel {
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      gap: 16px;
-      width: 100%;
+      display: none; flex-direction: column;
+      align-items: center; gap: 18px; width: 100%;
     }
 
-    .audio-panel.visible { display: flex; animation: fadeUp 0.5s ease both; }
+    .audio-panel.on {
+      display: flex;
+      animation: fadeUp 0.45s ease both;
+    }
+
+    .np-badge {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 11px; font-weight: 500;
+      letter-spacing: 0.16em; text-transform: uppercase;
+      color: var(--text-sub);
+    }
+
+    .np-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--accent);
+      animation: livePulse 1.5s infinite;
+    }
 
     .audio-panel audio {
-      width: 100%;
-      border-radius: 10px;
-      accent-color: var(--accent);
-      outline: none;
+      width: 100%; border-radius: 10px;
+      accent-color: var(--accent); outline: none;
     }
 
-    /* Style the native audio bar to blend with theme */
-    .audio-panel audio::-webkit-media-controls-panel {
-      background: var(--bg);
+    .dl-row {
+      display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;
     }
 
-    .audio-label {
-      font-size: 12px;
-      color: var(--muted);
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-
-    .download-btn {
-      display: inline-flex; align-items: center; gap: 8px;
-      padding: 10px 22px;
-      background: transparent;
-      border: 1px solid var(--accent);
+    .dl-btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 9px 20px;
+      border: 1px solid var(--border-med);
       border-radius: 100px;
-      color: var(--accent);
+      color: var(--text-sub);
       font-family: 'DM Sans', sans-serif;
-      font-size: 13px; font-weight: 500;
-      letter-spacing: 0.06em;
-      text-decoration: none;
-      transition: background 0.2s, color 0.2s;
-      cursor: pointer;
+      font-size: 12px; font-weight: 500;
+      text-decoration: none; background: transparent;
+      transition: border-color 0.2s, color 0.2s, background 0.2s;
     }
 
-    .download-btn:hover {
-      background: var(--accent);
-      color: var(--bg);
+    .dl-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-glow);
     }
 
-    .download-btn svg { flex-shrink: 0; }
+    /* ─────────────────────────────────────────
+       INFO ROWS
+    ───────────────────────────────────────── */
+    .info-block {
+      width: min(540px, 100%);
+      margin: 0 auto;
+      padding: 0 24px 80px;
+      display: flex; flex-direction: column; gap: 10px;
+      animation: fadeUp 0.6s 1.0s ease both;
+    }
 
-    /* ── Date/time bar ── */
-    .datetime-bar {
-      width: min(420px, 90vw);
-      display: flex; align-items: center; justify-content: center; gap: 12px;
-      padding: 14px 24px;
+    .info-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 13px 18px;
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 12px;
-      font-size: 13px; color: var(--muted);
-      animation: fadeUp 0.7s 0.8s ease both;
+      transition: background 0.35s, border-color 0.35s;
     }
 
-    .datetime-bar .time-val {
-      font-family: 'Syne', sans-serif;
-      font-size: 14px;
-      font-weight: 700;
-      color: var(--accent);
+    .ir-label {
+      display: flex; align-items: center; gap: 9px;
+      font-size: 11px; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--text-muted);
     }
 
-    /* ── Info chips ── */
-    .chips {
-      display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;
-      animation: fadeUp 0.7s 0.95s ease both;
+    .ir-val {
+      font-family: 'DM Mono', monospace;
+      font-size: 12.5px; color: var(--text);
     }
 
-    .chip {
-      display: flex; align-items: center; gap: 7px;
-      font-size: 11px; font-weight: 500;
-      color: var(--muted);
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 100px;
-      padding: 7px 16px;
-    }
+    .ir-val.hi { color: var(--accent); }
 
-    .chip svg { flex-shrink: 0; }
-
-    /* ── Footer ── */
+    /* ─────────────────────────────────────────
+       FOOTER
+    ───────────────────────────────────────── */
     footer {
-      text-align: center;
-      padding: 24px;
-      font-size: 12px; color: var(--muted);
+      margin-top: auto;
       border-top: 1px solid var(--border);
-      animation: fadeUp 0.7s 1.1s ease both;
+      padding: 28px 48px;
+      display: flex; align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap; gap: 12px;
+      font-size: 12px; color: var(--text-muted);
+      animation: fadeUp 0.6s 1.1s ease both;
+      transition: border-color 0.35s;
     }
 
-    footer a { color: var(--accent); text-decoration: none; }
-    footer a:hover { text-decoration: underline; }
+    footer a { color: var(--text-sub); text-decoration: none; }
+    footer a:hover { color: var(--accent); }
+    .foot-links { display: flex; gap: 20px; }
 
+    /* ─────────────────────────────────────────
+       ANIMATION
+    ───────────────────────────────────────── */
     @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(24px); }
+      from { opacity: 0; transform: translateY(20px); }
       to   { opacity: 1; transform: translateY(0); }
     }
 
-    @media (max-width: 480px) {
-      header { padding: 16px 20px; }
-      .hero  { padding: 60px 16px 32px; }
+    /* ─────────────────────────────────────────
+       RESPONSIVE
+    ───────────────────────────────────────── */
+    @media (max-width: 600px) {
+      nav   { padding: 0 18px; }
+      .nav-live { display: none; }
+      .hero { padding: 72px 18px 52px; }
+      footer { padding: 22px 18px; flex-direction: column; align-items: flex-start; }
+      .card-body { padding: 24px 20px 22px; }
     }
   </style>
 </head>
 <body>
 <div class="page">
 
-  <!-- HEADER -->
-  <header>
-    <div class="logo-group">
-      <img src="EDCLogo.png" alt="EDC Logo" />
-      <div class="logo-divider"></div>
-      <img src="usaid.jpeg" alt="USAID Logo" />
-    </div>
-    <div class="header-badge">HDAK Project</div>
-  </header>
-
-  <!-- HERO -->
-  <main class="hero">
-
-    <div class="hero-eyebrow">
-      <span class="dot"></span>
-      Now Loading — Episode 1
+  <!-- ══════════════════ NAV ══════════════════ -->
+  <nav>
+    <div class="nav-brand">
+      <div class="nav-logos">
+        <img src="EDCLogo.png" alt="EDC" />
+        <div class="nav-sep"></div>
+        <img src="usaid.jpeg" alt="USAID" />
+      </div>
+      <div class="nav-pill">HDAK Project</div>
     </div>
 
-    <h1 class="hero-title">
-      Interactive<br><span>Audio</span> Instruction
+    <div class="nav-right">
+      <div class="nav-live">
+        <div class="live-dot"></div>
+        <span id="nav-clock">—</span>
+      </div>
+
+      <label class="theme-toggle" title="Toggle dark / light mode">
+        <span class="t-icon sun">☀</span>
+        <input type="checkbox" id="theme-sw">
+        <div class="toggle-track"></div>
+        <span class="t-icon moon">☽</span>
+      </label>
+    </div>
+  </nav>
+
+  <!-- ══════════════════ HERO ══════════════════ -->
+  <section class="hero">
+
+    <div class="hero-badge">
+      <span class="sp">✦</span>
+      Now Streaming — Episode 1
+      <span class="sp">✦</span>
+    </div>
+
+    <h1>
+      Interactive<br>
+      <span class="grad">Audio</span><br>
+      Instruction
     </h1>
 
     <p class="hero-sub">
-      Connecting learners through radio-based education.
-      Your session is being prepared — audio will begin shortly.
+      Connecting learners across the region through radio-based education.
+      Your session is preparing — high-quality audio begins in moments.
     </p>
 
-    <!-- Loader card -->
-    <div class="loader-card">
-      <div class="audio-bars">
-        <span></span><span></span><span></span><span></span>
-        <span></span><span></span><span></span>
-      </div>
+    <div class="hero-cta">
+      <a class="btn-primary" href="#player-anchor">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21"/></svg>
+        Launch Episode 1
+      </a>
+      <a class="btn-outline" href="hdakwrn.mp3" download>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download MP3
+      </a>
+    </div>
 
-      <!-- Countdown (shown while waiting) -->
-      <div id="countdown-section">
-        <p class="loader-label">Preparing audio stream…</p>
-        <div class="countdown-wrap" style="margin-top:8px;">
-          <div class="ring-container">
-            <svg viewBox="0 0 64 64" width="72" height="72">
+    <div class="sparkle-div">
+      <hr>
+      <div class="sparks"><span>✦</span><span>✦</span><span>✦</span></div>
+      <hr>
+    </div>
+
+  </section>
+
+  <!-- ══════════════════ PLAYER ══════════════════ -->
+  <div class="player-wrap" id="player-anchor">
+    <div class="player-card">
+      <div class="card-bar"></div>
+      <div class="card-body">
+
+        <!-- macOS-style terminal readout -->
+        <div class="terminal">
+          <div class="term-titlebar">
+            <div class="tdot"></div>
+            <div class="tdot"></div>
+            <div class="tdot"></div>
+            <div class="term-name">hdak-iai — audio-stream</div>
+          </div>
+          <div class="term-out">
+            <div><span class="d">$</span> hdak-iai play <span class="b">Episode1</span></div>
+            <div class="g">✓ Firebase session logged</div>
+            <div class="g">✓ Device info captured</div>
+            <div id="buf-line"><span class="y">⟳</span> Buffering audio stream<span id="buf-dots">...</span></div>
+            <div id="ready-line" style="display:none;" class="g">✓ Stream ready — launching player</div>
+          </div>
+        </div>
+
+        <!-- Equaliser bars -->
+        <div class="eq-bars">
+          <span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span>
+        </div>
+
+        <!-- Countdown ring -->
+        <div id="countdown-block">
+          <div class="ring-wrap">
+            <svg viewBox="0 0 80 80" width="80" height="80">
               <defs>
-                <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <linearGradient id="rg" x1="0%" y1="0%" x2="100%" y2="0%">
                   <stop offset="0%"   stop-color="#00c2ff"/>
                   <stop offset="100%" stop-color="#ff6b35"/>
                 </linearGradient>
               </defs>
-              <circle class="ring-track" cx="32" cy="32" r="30"/>
-              <circle class="ring-fill"  cx="32" cy="32" r="30"/>
+              <circle class="rtrack" cx="40" cy="40" r="34"/>
+              <circle class="rfill"  cx="40" cy="40" r="34"/>
             </svg>
-            <div id="countdown">5</div>
+            <div id="cnt-num">5</div>
           </div>
-          <span class="countdown-label">Seconds until launch</span>
+          <span class="ring-sub">Seconds to launch</span>
         </div>
-      </div>
 
-      <!-- Audio player (revealed after countdown) -->
-      <div class="audio-panel" id="audio-panel">
-        <span class="audio-label">▶ Episode 1 — Now Playing</span>
-        <!-- Browser plays MP3 natively; AC3 listed as fallback for any player that supports it -->
-        <audio id="episode-audio" controls autoplay>
-          <source src="hdakwrn.mp3" type="audio/mpeg" />
-          <source src="hdakwrn.ac3" type="audio/ac3" />
-          Your browser does not support HTML5 audio.
-        </audio>
-        <!-- Download both formats -->
-        <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center;">
-          <a class="download-btn" href="hdakwrn.mp3" download>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="7 10 12 15 17 10"/>
-              <line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-            Download MP3
-          </a>
-          <a class="download-btn" href="hdakwrn.ac3" download>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="7 10 12 15 17 10"/>
-              <line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-            Download AC3
-          </a>
+        <!-- Audio player (revealed after countdown) -->
+        <div class="audio-panel" id="audio-panel">
+          <div class="np-badge">
+            <div class="np-dot"></div>
+            Episode 1 — Now Playing
+          </div>
+          <audio id="episode-audio" controls>
+            <source src="hdakwrn.mp3" type="audio/mpeg" />
+            <source src="hdakwrn.ac3" type="audio/ac3" />
+            Your browser does not support HTML5 audio.
+          </audio>
+          <div class="dl-row">
+            <a class="dl-btn" href="hdakwrn.mp3" download>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Download MP3
+            </a>
+            <a class="dl-btn" href="hdakwrn.ac3" download>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Download AC3
+            </a>
+          </div>
         </div>
+
       </div>
-
     </div>
+  </div>
 
-    <!-- Live clock -->
-    <div class="datetime-bar">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-      </svg>
-      <span id="live-date"></span>
-      <span>·</span>
-      <span class="time-val" id="live-time"></span>
-    </div>
+  <!-- ══════════════════ INFO ROWS ══════════════════ -->
+  <div class="info-block">
 
-    <!-- Device/session info chips -->
-    <div class="chips">
-      <div class="chip">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+    <div class="info-row">
+      <div class="ir-label">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
         </svg>
-        <span id="chip-platform">—</span>
+        Session time
       </div>
-      <div class="chip">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
+      <div class="ir-val hi" id="info-time">—</div>
+    </div>
+
+    <div class="info-row">
+      <div class="ir-label">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="3" width="20" height="14" rx="2"/>
+          <line x1="8" y1="21" x2="16" y2="21"/>
+          <line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+        Platform
+      </div>
+      <div class="ir-val" id="info-platform">—</div>
+    </div>
+
+    <div class="info-row">
+      <div class="ir-label">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="2" y1="12" x2="22" y2="12"/>
           <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
         </svg>
-        <span id="chip-lang">—</span>
+        Language / Region
       </div>
-      <div class="chip">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <div class="ir-val" id="info-lang">—</div>
+    </div>
+
+    <div class="info-row">
+      <div class="ir-label">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/>
           <circle cx="12" cy="10" r="3"/>
         </svg>
-        <span id="chip-tz">—</span>
+        Timezone
       </div>
+      <div class="ir-val" id="info-tz">—</div>
     </div>
 
-  </main>
+  </div>
 
+  <!-- ══════════════════ FOOTER ══════════════════ -->
   <footer>
-    HDAK Project · Powered by
-    <a href="https://firebase.google.com" target="_blank">Firebase Analytics</a>
-    · Hosted on <a href="https://pages.github.com" target="_blank">GitHub Pages</a>
+    <span>
+      <span class="sp">✦</span>
+      HDAK Project &nbsp;·&nbsp;
+      &copy; <span id="foot-yr"></span> EDC / USAID
+    </span>
+    <div class="foot-links">
+      <a href="https://firebase.google.com" target="_blank">Firebase Analytics</a>
+      <a href="https://pages.github.com" target="_blank">GitHub Pages</a>
+      <a href="hdakwrn.mp3" download>Download Audio</a>
+    </div>
   </footer>
 
 </div>
 
 <script>
-  // ── Live clock ──────────────────────────────────────────────
-  function updateClock() {
-    const now = new Date();
-    document.getElementById('live-date').textContent = now.toDateString();
-    document.getElementById('live-time').textContent = now.toLocaleTimeString();
+  /* ── Theme toggle ────────────────────────────── */
+  const root = document.documentElement;
+  const sw   = document.getElementById('theme-sw');
+
+  function setTheme(light) {
+    root.setAttribute('data-theme', light ? 'light' : 'dark');
+    localStorage.setItem('hdak-theme', light ? 'light' : 'dark');
   }
-  updateClock();
-  setInterval(updateClock, 1000);
 
-  // ── Device chips ────────────────────────────────────────────
-  document.getElementById('chip-platform').textContent =
-    navigator.platform || 'Unknown';
-  document.getElementById('chip-lang').textContent =
-    navigator.language || 'Unknown';
-  document.getElementById('chip-tz').textContent =
-    Intl.DateTimeFormat().resolvedOptions().timeZone || 'Unknown';
+  // Restore on load — default dark
+  const saved = localStorage.getItem('hdak-theme');
+  if (saved === 'light') setTheme(true);
 
-  // ── Countdown → reveal audio player (no redirect) ──────────
-  let seconds = 5;
-  const countEl       = document.getElementById('countdown');
-  const countSection  = document.getElementById('countdown-section');
-  const audioPanel    = document.getElementById('audio-panel');
-  const audioEl       = document.getElementById('episode-audio');
+  sw.addEventListener('change', () => setTheme(sw.checked));
 
-  const timer = setInterval(() => {
-    seconds--;
-    countEl.textContent = seconds;
-    if (seconds <= 0) {
-      clearInterval(timer);
-      // Hide the countdown, show the player
-      countSection.style.display = 'none';
-      audioPanel.classList.add('visible');
-      // Attempt autoplay (browsers may require user gesture first)
-      audioEl.play().catch(() => {
-        // Autoplay blocked — player is still visible, user can press play manually
-        console.info('Autoplay blocked by browser; player is ready for manual play.');
-      });
+  /* Note: the CSS handles the visual knob position via
+     [data-theme="light"] .toggle-track::after { transform: translateX(20px) }
+     so no JS needed for the knob itself. */
+
+  /* ── Clock ───────────────────────────────────── */
+  function tick() {
+    const n = new Date();
+    const t = n.toLocaleTimeString();
+    document.getElementById('nav-clock').textContent  = t;
+    document.getElementById('info-time').textContent  = n.toDateString() + '  ' + t;
+  }
+  tick();
+  setInterval(tick, 1000);
+
+  /* ── Device info ──────────────────────────────── */
+  document.getElementById('info-platform').textContent = navigator.platform || 'Unknown';
+  document.getElementById('info-lang').textContent     = navigator.language  || 'Unknown';
+  document.getElementById('info-tz').textContent       = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Unknown';
+  document.getElementById('foot-yr').textContent       = new Date().getFullYear();
+
+  /* ── Countdown → reveal player ────────────────── */
+  let secs    = 5;
+  const cntEl = document.getElementById('cnt-num');
+  const cntBl = document.getElementById('countdown-block');
+  const panel = document.getElementById('audio-panel');
+  const audio = document.getElementById('episode-audio');
+  const dots  = document.getElementById('buf-dots');
+  const rLine = document.getElementById('ready-line');
+
+  // Animate buffering dots
+  let dc = 0;
+  const dt = setInterval(() => {
+    dc = (dc + 1) % 4;
+    dots.textContent = '.'.repeat(dc || 1);
+  }, 380);
+
+  const ct = setInterval(() => {
+    secs--;
+    cntEl.textContent = secs;
+    if (secs <= 0) {
+      clearInterval(ct);
+      clearInterval(dt);
+      dots.textContent = '';
+      rLine.style.display = 'block';
+      setTimeout(() => {
+        cntBl.style.display = 'none';
+        panel.classList.add('on');
+        audio.play().catch(() =>
+          console.info('Autoplay blocked — press play to start.')
+        );
+      }, 550);
     }
   }, 1000);
 </script>
