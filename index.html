@@ -26,7 +26,7 @@
 
     // ↓↓↓ PASTE YOUR FIREBASE CONFIG HERE ↓↓↓
     const firebaseConfig = {
-      apiKey: "-- Your API Key --",
+      apiKey: "AIzaSyApjekeHvZsgLTiyVmdKbRDuAQvYnRRIu8",
       authDomain: "iais-b60ad.firebaseapp.com",
       projectId: "iais-b60ad",
       storageBucket: "iais-b60ad.firebasestorage.app", // Note: This is different from the original placeholder (iais-b60ad.appspot.com)
@@ -34,7 +34,6 @@
       appId: "1:112436397872:web:f01cd80f3c2dee56942af5",
       measurementId: "G-528408166" // This value remains the same as your provided Google Analytics Property ID
     };
-
     // ↑↑↑ PASTE YOUR FIREBASE CONFIG HERE ↑↑↑
 
     const app = initializeApp(firebaseConfig);
@@ -334,6 +333,58 @@
       color: var(--muted);
     }
 
+    /* ── Audio player panel (shown after countdown) ── */
+    .audio-panel {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      width: 100%;
+    }
+
+    .audio-panel.visible { display: flex; animation: fadeUp 0.5s ease both; }
+
+    .audio-panel audio {
+      width: 100%;
+      border-radius: 10px;
+      accent-color: var(--accent);
+      outline: none;
+    }
+
+    /* Style the native audio bar to blend with theme */
+    .audio-panel audio::-webkit-media-controls-panel {
+      background: var(--bg);
+    }
+
+    .audio-label {
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .download-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 22px;
+      background: transparent;
+      border: 1px solid var(--accent);
+      border-radius: 100px;
+      color: var(--accent);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px; font-weight: 500;
+      letter-spacing: 0.06em;
+      text-decoration: none;
+      transition: background 0.2s, color 0.2s;
+      cursor: pointer;
+    }
+
+    .download-btn:hover {
+      background: var(--accent);
+      color: var(--bg);
+    }
+
+    .download-btn svg { flex-shrink: 0; }
+
     /* ── Date/time bar ── */
     .datetime-bar {
       width: min(420px, 90vw);
@@ -433,24 +484,57 @@
         <span></span><span></span><span></span>
       </div>
 
-      <p class="loader-label">Preparing audio stream…</p>
-
-      <div class="countdown-wrap">
-        <div class="ring-container">
-          <svg viewBox="0 0 64 64" width="72" height="72">
-            <defs>
-              <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%"   stop-color="#00c2ff"/>
-                <stop offset="100%" stop-color="#ff6b35"/>
-              </linearGradient>
-            </defs>
-            <circle class="ring-track" cx="32" cy="32" r="30"/>
-            <circle class="ring-fill"  cx="32" cy="32" r="30"/>
-          </svg>
-          <div id="countdown">5</div>
+      <!-- Countdown (shown while waiting) -->
+      <div id="countdown-section">
+        <p class="loader-label">Preparing audio stream…</p>
+        <div class="countdown-wrap" style="margin-top:8px;">
+          <div class="ring-container">
+            <svg viewBox="0 0 64 64" width="72" height="72">
+              <defs>
+                <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%"   stop-color="#00c2ff"/>
+                  <stop offset="100%" stop-color="#ff6b35"/>
+                </linearGradient>
+              </defs>
+              <circle class="ring-track" cx="32" cy="32" r="30"/>
+              <circle class="ring-fill"  cx="32" cy="32" r="30"/>
+            </svg>
+            <div id="countdown">5</div>
+          </div>
+          <span class="countdown-label">Seconds until launch</span>
         </div>
-        <span class="countdown-label">Seconds until launch</span>
       </div>
+
+      <!-- Audio player (revealed after countdown) -->
+      <div class="audio-panel" id="audio-panel">
+        <span class="audio-label">▶ Episode 1 — Now Playing</span>
+        <!-- Browser plays MP3 natively; AC3 listed as fallback for any player that supports it -->
+        <audio id="episode-audio" controls autoplay>
+          <source src="hdakwrn.mp3" type="audio/mpeg" />
+          <source src="hdakwrn.ac3" type="audio/ac3" />
+          Your browser does not support HTML5 audio.
+        </audio>
+        <!-- Download both formats -->
+        <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center;">
+          <a class="download-btn" href="hdakwrn.mp3" download>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Download MP3
+          </a>
+          <a class="download-btn" href="hdakwrn.ac3" download>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Download AC3
+          </a>
+        </div>
+      </div>
+
     </div>
 
     <!-- Live clock -->
@@ -515,18 +599,26 @@
   document.getElementById('chip-tz').textContent =
     Intl.DateTimeFormat().resolvedOptions().timeZone || 'Unknown';
 
-  // ── Countdown + redirect ────────────────────────────────────
+  // ── Countdown → reveal audio player (no redirect) ──────────
   let seconds = 5;
-  const countEl = document.getElementById('countdown');
+  const countEl       = document.getElementById('countdown');
+  const countSection  = document.getElementById('countdown-section');
+  const audioPanel    = document.getElementById('audio-panel');
+  const audioEl       = document.getElementById('episode-audio');
 
   const timer = setInterval(() => {
     seconds--;
     countEl.textContent = seconds;
     if (seconds <= 0) {
       clearInterval(timer);
-      countEl.textContent = '▶';
-      // Consider using a relative path if hdakwrn.ac3 is in the same directory or a known sub-directory
-      window.location.href = 'hdakwrn.ac3';
+      // Hide the countdown, show the player
+      countSection.style.display = 'none';
+      audioPanel.classList.add('visible');
+      // Attempt autoplay (browsers may require user gesture first)
+      audioEl.play().catch(() => {
+        // Autoplay blocked — player is still visible, user can press play manually
+        console.info('Autoplay blocked by browser; player is ready for manual play.');
+      });
     }
   }, 1000);
 </script>
