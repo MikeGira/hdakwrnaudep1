@@ -28,12 +28,12 @@
     }
   -->
   <script type="module">
-    import { initializeApp }    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getFirestore, collection, onSnapshot, query, orderBy, where,
-             Timestamp }        from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { initializeApp }   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, collection, onSnapshot, orderBy, query }
+                               from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-    // ↓↓↓ PASTE YOUR FIREBASE CONFIG HERE ↓↓↓
-     const firebaseConfig = {
+    // ── Same config as index.html ─────────────────────────────
+    const firebaseConfig = {
       apiKey: "AIzaSyApjekeHvZsgLTiyVmdKbRDuAQvYnRRIu8",
       authDomain: "iais-b60ad.firebaseapp.com",
       projectId: "iais-b60ad",
@@ -42,7 +42,6 @@
       appId: "1:112436397872:web:f01cd80f3c2dee56942af5",
       measurementId: "G-528408166"
     };
-    // ↑↑↑ PASTE YOUR FIREBASE CONFIG HERE ↑↑↑
 
     const app = initializeApp(firebaseConfig);
     const db  = getFirestore(app);
@@ -216,18 +215,22 @@
     // ── Live listeners ─────────────────────────────────────────
     let activeUsers = 0;
 
-    // Presence
+    // Presence — listen to whole collection, no where() = no index needed
     onSnapshot(
-      query(collection(db, 'presence'), where('active', '==', true)),
+      collection(db, 'presence'),
       snap => {
         activeUsers = snap.size;
         document.getElementById('stat-active').textContent = activeUsers;
         const badge = document.getElementById('live-badge');
-        if (badge) badge.textContent = activeUsers + ' online now';
-      }
+        if (badge) badge.textContent = activeUsers + (activeUsers === 1 ? ' user online' : ' users online');
+      },
+      err => console.error("Presence listener error:", err)
     );
 
-    // Device info — live
+    // Device info — live, ordered by timestamp
+    // NOTE: Firestore will prompt you to create an index the first time.
+    // If you see an index error in the console, click the link in the error
+    // to auto-create it in one click, then reload this page.
     onSnapshot(
       query(collection(db, 'deviceInfo'), orderBy('timestamp', 'asc')),
       snap => {
@@ -237,6 +240,13 @@
         renderTable(allRows);
         document.getElementById('last-updated').textContent =
           'Last updated: ' + new Date().toLocaleTimeString();
+      },
+      err => {
+        console.error("deviceInfo listener error:", err);
+        // Surface index-creation link if that's the issue
+        if (err.message && err.message.includes('index')) {
+          console.warn("👆 Click the link above in the error to create the required Firestore index, then reload.");
+        }
       }
     );
 
