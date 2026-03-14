@@ -19,29 +19,62 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 
-  <!-- Firebase — ALL imports must be at the top of the module, never nested -->
-  <script type="module">
-    import { initializeApp }   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getAnalytics, logEvent }
-                               from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
-    import { getFirestore, collection, addDoc, doc, setDoc, deleteDoc,
-             onSnapshot, serverTimestamp }
-                               from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  <!-- Firestore via REST API — no SDK, no WebSocket, works from any host -->
+  <script>
+    const FS_PROJECT = "iais-b60ad";
+    const FS_API_KEY = "AIzaSyApjekeHvZsgLTiyVmdKbRDuAQvYnRRIu8";
+    const FS_BASE    = `https://firestore.googleapis.com/v1/projects/${FS_PROJECT}/databases/(default)/documents`;
 
-    // ── Your Firebase project config ──────────────────────────
-    const firebaseConfig = {
-      apiKey: "AIzaSyApjekeHvZsgLTiyVmdKbRDuAQvYnRRIu8",
-      authDomain: "iais-b60ad.firebaseapp.com",
-      projectId: "iais-b60ad",
-      storageBucket: "iais-b60ad.firebasestorage.app",
-      messagingSenderId: "112436397872",
-      appId: "1:112436397872:web:f01cd80f3c2dee56942af5",
-      measurementId: "G-N2RS23H6FT"
-    };
+    // ── Helpers ───────────────────────────────────────────────
+    // Convert a plain JS object → Firestore REST field map
+    function toFS(obj) {
+      const fields = {};
+      for (const [k, v] of Object.entries(obj)) {
+        if (typeof v === 'string')  fields[k] = { stringValue: v };
+        else if (typeof v === 'number') fields[k] = { integerValue: v };
+        else if (typeof v === 'boolean') fields[k] = { booleanValue: v };
+      }
+      return { fields };
+    }
 
-    const app       = initializeApp(firebaseConfig);
-    const analytics = getAnalytics(app);
-    const db        = getFirestore(app);
+    // POST a new document to a collection (auto-ID)
+    async function fsAdd(collection, data) {
+      const url = `${FS_BASE}/${collection}?key=${FS_API_KEY}`;
+      const res = await fetch(url, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(toFS(data))
+      });
+      if (!res.ok) throw new Error(`Firestore POST failed: ${res.status} ${await res.text()}`);
+      return res.json();
+    }
+
+    // PATCH (upsert) a named document
+    async function fsSet(collection, docId, data) {
+      const url = `${FS_BASE}/${collection}/${docId}?key=${FS_API_KEY}`;
+      const res = await fetch(url, {
+        method:  'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(toFS(data))
+      });
+      if (!res.ok) throw new Error(`Firestore PATCH failed: ${res.status} ${await res.text()}`);
+      return res.json();
+    }
+
+    // DELETE a named document
+    async function fsDelete(collection, docId) {
+      const url = `${FS_BASE}/${collection}/${docId}?key=${FS_API_KEY}`;
+      await fetch(url, { method: 'DELETE' });
+    }
+
+    // GET count of documents in a collection
+    async function fsCount(collection) {
+      const url = `${FS_BASE}/${collection}?key=${FS_API_KEY}&pageSize=300`;
+      const res = await fetch(url);
+      if (!res.ok) return 0;
+      const data = await res.json();
+      return (data.documents || []).length;
+    }
 
     // ── Browser detection ─────────────────────────────────────
     function detectBrowser(ua) {
@@ -56,62 +89,45 @@
       return 'Unknown';
     }
     const browser = detectBrowser(navigator.userAgent);
-    window.__hdakBrowser = browser;  // expose for info-row chip
+    window.__hdakBrowser = browser;
 
-    // ── Write device info to Firestore ────────────────────────
-    try {
-      await addDoc(collection(db, "deviceInfo"), {
-        episode:     "Episode1",
-        userAgent:   navigator.userAgent,
-        browser:     browser,
-        platform:    navigator.platform,
-        language:    navigator.language,
-        screenWidth:  screen.width,
-        screenHeight: screen.height,
-        colorDepth:   screen.colorDepth,
-        timezone:    Intl.DateTimeFormat().resolvedOptions().timeZone,
-        timestamp:   serverTimestamp()
-      });
-      console.log("✓ Device info written to Firestore.");
-    } catch (e) {
-      console.error("✗ Firestore write failed:", e);
-    }
+    // ── Write device info ─────────────────────────────────────
+    fsAdd("deviceInfo", {
+      episode:     "Episode1",
+      browser:     browser,
+      platform:    navigator.platform,
+      language:    navigator.language,
+      screenWidth:  screen.width,
+      screenHeight: screen.height,
+      timezone:    Intl.DateTimeFormat().resolvedOptions().timeZone,
+      timestamp:   new Date().toISOString(),
+      userAgent:   navigator.userAgent
+    }).then(() => console.log("✓ Device info written to Firestore."))
+      .catch(e  => console.error("✗ Firestore write failed:", e));
 
-    // ── Log Analytics event ───────────────────────────────────
-    try {
-      logEvent(analytics, "episode_loaded", {
-        episode:  "Episode1",
-        platform: navigator.platform,
-        language: navigator.language,
-        browser:  browser
-      });
-    } catch (e) { /* analytics non-critical */ }
-
-    // ── Presence tracking (active users) ─────────────────────
-    // Uses a simple collection where each tab writes one doc.
-    // No composite index needed — we just count ALL docs in the collection
-    // and delete our own on page unload.
+    // ── Presence tracking ─────────────────────────────────────
     const sessionId = crypto.randomUUID();
-    const presRef   = doc(db, "presence", sessionId);
 
-    try {
-      await setDoc(presRef, { ts: serverTimestamp() });
+    fsSet("presence", sessionId, {
+      active:    "true",
+      timestamp: new Date().toISOString()
+    }).then(() => {
       console.log("✓ Presence written.");
-    } catch (e) {
-      console.error("✗ Presence write failed:", e);
-    }
+      // Poll count every 10 seconds
+      function updateCount() {
+        fsCount("presence").then(n => {
+          window.__hdakActiveUsers = n;
+          const el = document.getElementById('info-active');
+          if (el) el.textContent = n + (n === 1 ? ' user online' : ' users online');
+        });
+      }
+      updateCount();
+      setInterval(updateCount, 10000);
+    }).catch(e => console.error("✗ Presence write failed:", e));
 
-    // Listen to the whole presence collection — no where() = no index needed
-    onSnapshot(collection(db, "presence"), snap => {
-      const count = snap.size;
-      window.__hdakActiveUsers = count;
-      const el = document.getElementById('info-active');
-      if (el) el.textContent = count + (count === 1 ? ' user online' : ' users online');
-    }, err => console.error("Presence listener error:", err));
-
-    // Remove presence doc when user leaves
-    window.addEventListener('pagehide',     () => deleteDoc(presRef));
-    window.addEventListener('beforeunload', () => deleteDoc(presRef));
+    // Clean up presence on leave
+    window.addEventListener('pagehide',     () => fsDelete("presence", sessionId));
+    window.addEventListener('beforeunload', () => fsDelete("presence", sessionId));
   </script>
 
   <style>
